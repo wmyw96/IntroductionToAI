@@ -28,7 +28,20 @@ def load_pinyin(pinyin_filename, token_filename):
         dict[py] = tokens
     print('[INFO] successfully loaded %d pinyins.' % len(dict))
 
-    return dict
+    return token_set, dict
 
-def load_corpus(corpus_filename):
-    return None
+def load_language_model(ngram, significance):
+    model = []
+    significance = int(significance * 100)
+    for i in range(ngram):
+        igramdict = {}
+        filename = 'model/%d-gram_sig_%d.csv' % (ngram, significance)
+        file = open(filename, 'r')
+        for line in file:
+            cont = line[:-2].split(',')
+            igramdict[cont[0]] = cont[1]
+        model = model + [igramdict]
+    return model
+
+
+
