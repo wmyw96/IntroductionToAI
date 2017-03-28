@@ -3,9 +3,10 @@
 
 from methods import astar_pinyin, build_language_model
 from utils import load_pinyin, load_language_model
+from methods import calc_log_prob
 import re
 
-MODEL = True
+MODEL = False
 
 if __name__ == '__main__':
     input_file = open('data/input.txt', 'r')
@@ -13,15 +14,19 @@ if __name__ == '__main__':
 
     if not MODEL:
         build_language_model(token_set, ['corpus/2016-01.txt', 'corpus/2016-02.txt', 'corpus/2016-03.txt',
-                                         'corpus/2016-04.txt', 'corpus/2016-05.txt', 'corpus/2016-04.txt',
+                                         'corpus/2016-04.txt', 'corpus/2016-05.txt', 'corpus/2016-06.txt',
                                          'corpus/2016-07.txt', 'corpus/2016-08.txt', 'corpus/2016-09.txt',
-                                         'corpus/2016-10.txt', 'corpus/2016-11.txt'], ngram=1)
+                                         'corpus/2016-10.txt', 'corpus/2016-11.txt'], ngram=3)
 
-    model = load_language_model(ngram=2, significance=0.95)
+    model = load_language_model(ngram=3, significance=0.95)
 
     pattern = re.compile(r'[a-z]+')
+
+    print(calc_log_prob('清华大学计算机系'.decode('utf-8'), model, ngram=3))
+
     for line in input_file:
         tokens = re.findall(pattern, line)
-        ans = astar_pinyin(tokens, model)
+        ans, log_prob = astar_pinyin(tokens, pydict, model, ngram=3)
         print(ans)
+        print(log_prob)
 

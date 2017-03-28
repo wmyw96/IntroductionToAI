@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import math
 
 def frequency_count(dict, max_count = 100):
     count = [0] * (max_count + 1)
@@ -92,6 +93,97 @@ def build_language_model(token_set, fileList, ngram=2, max_count=100, significan
     model = model_prone(gram_dict, max_count, significance)
     save_model(model, 'model/%d-gram_sig_%d.csv' % (ngram, int(significance * 100)))
 
- 
-def astar_pinyin(tokens, model):
-    raise NotImplementedError
+
+def check_log(x, y):
+    if y == 0:
+        raise ValueError('Invalid probibility value')
+    if x == 0:
+        return -1e9
+    # print(y, x)
+    return math.log((y + 0.0) / x)
+
+
+def local_log_prob(text, model, ngram):
+    if len(text) < ngram:
+        ngram = len(text)
+    text = text[-ngram:]
+    # print(text)
+    if (ngram == 1):
+        return check_log(model[ngram - 1][text], 1)
+    if text in model[ngram - 1]:
+        return check_log(model[ngram - 2][text[:-1]], model[ngram - 1][text])
+    else:
+        return -1e9
+
+
+def calc_log_prob(text, model, ngram):
+    log_prob = 0
+    for i in range(len(text)):
+        log_prob += local_log_prob(text[:i+1], model, ngram)
+    return log_prob
+
+
+def astar_pinyin(pinyin, pydict, model, ngram=2, iters=1000000):
+    head = 0
+    queue = ['']
+    open_set = set([''])
+    state_value = {'': 0}
+
+    for key in pydict:
+        def cmp1(x, y):
+            try:
+                a = model[0][x]
+            except:
+                a = 0
+            try:
+                b = model[0][y]
+            except:
+                b = 0
+            if a < b:
+                return -1
+            if a == b:
+                return 0
+            if a > b:
+                return 1
+        pylist = pydict[key]
+        sortedlist = sorted(pylist, cmp=cmp1)
+        pydict[key] = []
+        for item in reversed(sortedlist):
+            if item in model[0]:
+                pydict[key] += [item]
+
+    ans_text = ''
+    ans_log_prob = -1e9
+    itr = 0
+    while itr < iters and head < len(queue):
+        cur_text = queue[head]
+        head += 1
+        # print(cur_text)
+        cur_log_prob = state_value[cur_text]
+        if len(cur_text) == len(pinyin):
+            if cur_log_prob > ans_log_prob:
+                ans_log_prob = cur_log_prob
+                ans_text = cur_text
+        open_set.remove(cur_text)
+        if ans_log_prob >= cur_log_prob or len(cur_text) == len(pinyin):
+            continue
+        idx = len(cur_text)
+        for token in pydict[pinyin[idx]]:
+            x_text = cur_text + token
+            x_log_prob = local_log_prob(x_text, model, ngram) + cur_log_prob
+            in_state = x_text in state_value
+            in_open_set = x_text in open_set
+            if (not in_state) and (not in_open_set):
+                open_set.add(x_text)
+                queue += [x_text]
+                state_value[x_text] = x_log_prob
+            if in_state:
+                if x_log_prob > state_value[x_text]:
+                    state_value[x_text] = x_log_prob
+                    if not in_open_set:
+                        queue += [x_text]
+                        open_set.add(x_text)
+
+
+    return ans_text, ans_log_prob
+
