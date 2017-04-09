@@ -53,7 +53,7 @@ if __name__ == '__main__':
         build_language_model(token_set, filenames,
                              ngram=4, significance=0.95)
 
-    model = load_language_model(abs_path, ngram=4, significance=0.95)
+    model = load_language_model(abs_path, ngram=3, significance=0.95)
 
     pattern = re.compile(r'[a-z]+')
 
@@ -70,7 +70,7 @@ if __name__ == '__main__':
     for line in input_file:
         tokens = re.findall(pattern, line)
         time_epoch = -time.time()
-        ans, log_prob = astar_pinyin(tokens, pydict, model, ngram=4)
+        ans, log_prob = astar_pinyin(tokens, pydict, model, ngram=3)
         time_epoch += time.time()
         cur = cur + 1
         print('[INFO] Searching..., solved %d out of %d, using time %.3f s'
