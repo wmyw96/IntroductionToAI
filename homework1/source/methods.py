@@ -4,7 +4,7 @@
 import math
 
 
-def frequency_count(dict, max_count = 100):
+def frequency_count(dict, max_count=100):
     count = [0] * (max_count + 1)
     for key in dict:
         if dict[key] <= max_count:
@@ -93,8 +93,8 @@ def build_language_model(token_set, fileList, ngram=2,
                 print('[INFO] (build_language_model) File %s process: '
                       'Already %d articles' % (filename, cnt_pages))
         print('[INFO] (build_language_model) File %s solved,'
-              ' totally %d articles. %d %d-gram' % \
-                (filename, cnt_pages, len(gram_dict), ngram))
+              ' totally %d articles. %d %d-gram' %
+              (filename, cnt_pages, len(gram_dict), ngram))
 
     frequency_count(gram_dict, max_count)
     model = model_prone(gram_dict, max_count, significance)
@@ -122,7 +122,8 @@ def local_log_prob_no_memory(text, model, ngram):
         return check_log(1, model[ngram - 1][text])
     if text[:-1] in model[ngram - 2]:
         if text in model[ngram - 1]:
-            return check_log(model[ngram - 2][text[:-1]], model[ngram - 1][text])
+            return check_log(model[ngram - 2][text[:-1]],
+                             model[ngram - 1][text])
         else:
             if len(text) > 2:
                 return local_log_prob(text[1:], model, ngram) - 100
@@ -136,11 +137,12 @@ def local_log_prob_no_memory(text, model, ngram):
 
 
 def local_log_prob(text, model, ngram):
+    # o_ngram = ngram
     if len(text) < ngram:
         ngram = len(text)
     text = text[-ngram:]
     if (ngram == 1):
-        return check_log(1, model[ngram - 1][text])
+        return check_log(1, model[ngram - 1][text])  # + model[o_ngram][text[-1]]
 
     if text in memory[ngram]:
         return memory[ngram][text]
@@ -153,6 +155,7 @@ def local_log_prob(text, model, ngram):
             if text in model[ngram - 1]:
                 ret = ret + check_log(model[ngram - 2][text[:-1]],
                                       model[ngram - 1][text])
+                # ret = ret + model[o_ngram][text[-1]]
                 memory[old_ngram][old_text] = ret
                 return ret
             else:
@@ -187,6 +190,7 @@ def astar_pinyin(pinyin, pydict, model, ngram=2, iters=1000000):
     open_set = set([''])
     state_value = {'': 0}
 
+    # model.append({})
     for key in pydict:
         def cmp1(x, y):
             try:
@@ -206,9 +210,15 @@ def astar_pinyin(pinyin, pydict, model, ngram=2, iters=1000000):
         pylist = pydict[key]
         sortedlist = sorted(pylist, cmp=cmp1)
         pydict[key] = []
+        # tot = 0.0
         for item in reversed(sortedlist):
             if item in model[0]:
                 pydict[key] += [item]
+        #        tot += model[0][item]
+        # for item in reversed(sortedlist):
+        #     if item in model[0]:
+        #         model[ngram][item] = math.log((model[0][item] + 0.0) / tot)
+
 
     ans_text = ''
     ans_log_prob = -1e9
@@ -251,4 +261,3 @@ def astar_pinyin(pinyin, pydict, model, ngram=2, iters=1000000):
                             queue[head] = x_text
 
     return ans_text, ans_log_prob
-

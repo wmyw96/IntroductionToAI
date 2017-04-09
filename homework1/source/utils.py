@@ -33,13 +33,14 @@ def load_pinyin(pinyin_filename, token_filename):
     return token_set, dict
 
 
-def load_language_model(ngram, significance):
+def load_language_model(abs_path, ngram, significance):
     print('[INFO] Start loading language model...')
     model = []
     significance = int(significance * 100)
     for i in range(ngram):
         igramdict = {}
-        filename = '../model/%d-gram_sig_%d.csv' % (i + 1, significance)
+        filename = abs_path + '/model/%d-gram_sig_%d.csv' \
+                              % (i + 1, significance)
         file = open(filename, 'r')
         for line in file:
             str = line.decode('utf-8')
@@ -48,6 +49,3 @@ def load_language_model(ngram, significance):
         model = model + [igramdict]
     print('[INFO] Finished!')
     return model
-
-
-
