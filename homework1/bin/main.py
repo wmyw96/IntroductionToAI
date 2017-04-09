@@ -6,7 +6,7 @@ import os
 import time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
                 + '/source')
-from methods import astar_pinyin, build_language_model
+from methods import astar_pinyin, build_language_model, calc_log_prob
 from utils import load_pinyin, load_language_model
 import re
 
@@ -70,7 +70,7 @@ if __name__ == '__main__':
     for line in input_file:
         tokens = re.findall(pattern, line)
         time_epoch = -time.time()
-        ans, log_prob = astar_pinyin(tokens, pydict, model, ngram=3)
+        ans, log_prob = astar_pinyin(tokens, pydict, model, ngram=4)
         time_epoch += time.time()
         cur = cur + 1
         print('[INFO] Searching..., solved %d out of %d, using time %.3f s'
@@ -91,7 +91,8 @@ if __name__ == '__main__':
                     cur_cor += 1.0
             tot_len += cur_len
             tot_cor += cur_cor
-            print('Test #%d: accuracy %.2f' % (cur, cur_cor / cur_len))
+            print('Test #%d: accuracy %.2f, all accuracy %.2f'
+                  % (cur, cur_cor / cur_len, tot_cor / tot_len))
 
     if checkAns:
         print('Total accuracy %.2f' % (tot_cor / tot_len))

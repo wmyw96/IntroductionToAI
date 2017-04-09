@@ -131,7 +131,7 @@ def local_log_prob_no_memory(text, model, ngram):
                 return -2e8
     else:
         if len(text) > 2:
-            return local_log_prob(text[1:], model, ngram) - 100
+            return local_log_prob(text[1:], model, ngram) * 2
         else:
             return -2e8
 
@@ -181,6 +181,8 @@ def calc_log_prob(text, model, ngram):
     log_prob = 0
     for i in range(len(text)):
         log_prob += local_log_prob(text[:i+1], model, ngram)
+        print('%s: %.3f' % (text[i].encode('utf-8'),
+                          local_log_prob(text[:i+1], model, ngram)))
     return log_prob
 
 
