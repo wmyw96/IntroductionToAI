@@ -3,6 +3,7 @@
 
 import math
 
+
 def frequency_count(dict, max_count = 100):
     count = [0] * (max_count + 1)
     for key in dict:
@@ -13,7 +14,8 @@ def frequency_count(dict, max_count = 100):
     sum = 0
     for i in range(101):
         sum = sum + count[i]
-        print('-------- Value %d, count %d, totally %d(till)' % (i, count[i], sum))
+        print('-------- Value %d, count %d, totally %d(till)' %
+              (i, count[i], sum))
     print('============================================================\n')
 
 
@@ -34,6 +36,7 @@ def model_prone(dict, max_count=100, significance=0.95):
             reject = i - 1
             reserve += count[i] * i
             break
+    reject = max(25, reject)
     print('---- [INFO] We reject pattern whose count <= %d' % reject)
     model = {}
     for key in dict:
@@ -51,7 +54,8 @@ def save_model(model, filename):
     print('---- [INFO] Model successfully saved')
 
 
-def build_language_model(token_set, fileList, ngram=2, max_count=100, significance=1.01):
+def build_language_model(token_set, fileList, ngram=2,
+                         max_count=100, significance=0.95):
     symbol_file = open('config/symbol.txt')
     symbol_set = (symbol_file.read().decode(encoding='utf-8').split(' '))
 
@@ -61,7 +65,8 @@ def build_language_model(token_set, fileList, ngram=2, max_count=100, significan
         file = open(filename, 'r')
 
         cnt_pages = 0
-        print('\n[INFO] (build_language_model) Starting handling file %s' % filename)
+        print('\n[INFO] (build_language_model) '
+              'Starting handling file %s' % filename)
         for line in file.readlines():
             out = ''
             str = line.decode(encoding='utf-8')
@@ -85,13 +90,16 @@ def build_language_model(token_set, fileList, ngram=2, max_count=100, significan
                     out = ''
             cnt_pages += 1
             if cnt_pages % 1000 == 0:
-                print('[INFO] (build_language_model) File %s process: Already %d articles' % (filename, cnt_pages))
-        print('[INFO] (build_language_model) File %s solved, totally %d articles. %d %d-gram' % \
+                print('[INFO] (build_language_model) File %s process: '
+                      'Already %d articles' % (filename, cnt_pages))
+        print('[INFO] (build_language_model) File %s solved,'
+              ' totally %d articles. %d %d-gram' % \
                 (filename, cnt_pages, len(gram_dict), ngram))
 
     frequency_count(gram_dict, max_count)
     model = model_prone(gram_dict, max_count, significance)
-    save_model(model, 'model/%d-gram_sig_%d.csv' % (ngram, int(significance * 100)))
+    save_model(model, 'model/%d-gram_sig_%d.csv'
+               % (ngram, int(significance * 100)))
 
 
 def check_log(x, y):
@@ -99,21 +107,71 @@ def check_log(x, y):
         raise ValueError('Invalid probibility value')
     if x == 0:
         return -1e9
-    # print(y, x)
     return math.log((y + 0.0) / x)
+
+
+memory = [{}] * 5
+
+
+# No memory: use four times more time
+def local_log_prob_no_memory(text, model, ngram):
+    if len(text) < ngram:
+        ngram = len(text)
+    text = text[-ngram:]
+    if ngram == 1:
+        return check_log(1, model[ngram - 1][text])
+    if text[:-1] in model[ngram - 2]:
+        if text in model[ngram - 1]:
+            return check_log(model[ngram - 2][text[:-1]], model[ngram - 1][text])
+        else:
+            if len(text) > 2:
+                return local_log_prob(text[1:], model, ngram) - 100
+            else:
+                return -2e8
+    else:
+        if len(text) > 2:
+            return local_log_prob(text[1:], model, ngram) - 100
+        else:
+            return -2e8
 
 
 def local_log_prob(text, model, ngram):
     if len(text) < ngram:
         ngram = len(text)
     text = text[-ngram:]
-    # print(text)
     if (ngram == 1):
-        return check_log(model[ngram - 1][text], 1)
-    if text in model[ngram - 1]:
-        return check_log(model[ngram - 2][text[:-1]], model[ngram - 1][text])
-    else:
-        return -1e9
+        return check_log(1, model[ngram - 1][text])
+
+    if text in memory[ngram]:
+        return memory[ngram][text]
+
+    old_ngram = ngram
+    old_text = text
+    ret = 0.0
+    while len(text) >= 2:
+        if text[:-1] in model[ngram - 2]:
+            if text in model[ngram - 1]:
+                ret = ret + check_log(model[ngram - 2][text[:-1]],
+                                      model[ngram - 1][text])
+                memory[old_ngram][old_text] = ret
+                return ret
+            else:
+                if len(text) > 2:
+                    text = text[1:]
+                    ngram -= 1
+                    ret = ret - 100
+                else:
+                    break
+        else:
+            if len(text) > 2:
+                text = text[1:]
+                ngram -= 1
+                ret = ret - 100
+            else:
+                break
+    ret = -2e8
+    memory[old_ngram][old_text] = ret
+    return ret
 
 
 def calc_log_prob(text, model, ngram):
@@ -155,11 +213,11 @@ def astar_pinyin(pinyin, pydict, model, ngram=2, iters=1000000):
     ans_text = ''
     ans_log_prob = -1e9
     itr = 0
-    while itr < iters and head < len(queue):
+    while head < iters and head < len(queue):
         cur_text = queue[head]
         head += 1
-        # print(cur_text)
         cur_log_prob = state_value[cur_text]
+        # print('%s : %f' % (cur_text, cur_log_prob))
         if len(cur_text) == len(pinyin):
             if cur_log_prob > ans_log_prob:
                 ans_log_prob = cur_log_prob
@@ -171,19 +229,26 @@ def astar_pinyin(pinyin, pydict, model, ngram=2, iters=1000000):
         for token in pydict[pinyin[idx]]:
             x_text = cur_text + token
             x_log_prob = local_log_prob(x_text, model, ngram) + cur_log_prob
+            if x_log_prob <= ans_log_prob:
+                continue
             in_state = x_text in state_value
             in_open_set = x_text in open_set
             if (not in_state) and (not in_open_set):
                 open_set.add(x_text)
                 queue += [x_text]
                 state_value[x_text] = x_log_prob
+                if state_value[queue[head]] < x_log_prob:
+                    queue[-1] = queue[head]
+                    queue[head] = x_text
             if in_state:
                 if x_log_prob > state_value[x_text]:
                     state_value[x_text] = x_log_prob
                     if not in_open_set:
                         queue += [x_text]
                         open_set.add(x_text)
-
+                        if state_value[queue[head]] < x_log_prob:
+                            queue[-1] = queue[head]
+                            queue[head] = x_text
 
     return ans_text, ans_log_prob
 

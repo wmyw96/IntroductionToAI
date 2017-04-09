@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+
 def load_pinyin(pinyin_filename, token_filename):
     token_set = set([])
     token_file = open(token_filename, 'r')
@@ -24,13 +25,16 @@ def load_pinyin(pinyin_filename, token_filename):
             if item in token_set:
                 tokens.append(item)
             else:
-                print('[WARNING] ignore token %s in pinyin file because it is not in the token file' % item)
+                print('[WARNING] ignore token %s in pinyin file because '
+                      'it is not in the token file' % item)
         dict[py] = tokens
     print('[INFO] successfully loaded %d pinyins.' % len(dict))
 
     return token_set, dict
 
+
 def load_language_model(ngram, significance):
+    print('[INFO] Start loading language model...')
     model = []
     significance = int(significance * 100)
     for i in range(ngram):
@@ -42,6 +46,7 @@ def load_language_model(ngram, significance):
             cont = str[:-1].split(',')
             igramdict[cont[0]] = int(cont[1])
         model = model + [igramdict]
+    print('[INFO] Finished!')
     return model
 
 
