@@ -39,7 +39,7 @@ def load_language_model(ngram, significance):
     significance = int(significance * 100)
     for i in range(ngram):
         igramdict = {}
-        filename = 'model/%d-gram_sig_%d.csv' % (i + 1, significance)
+        filename = '../model/%d-gram_sig_%d.csv' % (i + 1, significance)
         file = open(filename, 'r')
         for line in file:
             str = line.decode('utf-8')

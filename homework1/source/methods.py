@@ -56,7 +56,7 @@ def save_model(model, filename):
 
 def build_language_model(token_set, fileList, ngram=2,
                          max_count=100, significance=0.95):
-    symbol_file = open('config/symbol.txt')
+    symbol_file = open('../config/symbol.txt')
     symbol_set = (symbol_file.read().decode(encoding='utf-8').split(' '))
 
     gram_dict = {}
